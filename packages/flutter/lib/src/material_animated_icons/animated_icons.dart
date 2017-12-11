@@ -18,6 +18,7 @@ class AnimatedIcon extends StatelessWidget {
   ///
   /// [progress], [color], and [icon] cannot be null.
   const AnimatedIcon({
+    Key key,
     @required this.progress,
     @required this.color,
     @required this.icon,
@@ -79,9 +80,167 @@ class AnimatedIcon extends StatelessWidget {
   /// specified, either directly using this property or using [Directionality].
   final TextDirection textDirection;
 
+  static final _UiPathFactory _pathFactory = () => new ui.Path();
+
   @override
   Widget build(BuildContext context) {
-    // TODO(amirh): implement this.
-    return new Container();
+    // TODO(amirh): implement semantics, text direction, scaling.
+    final _AnimatedIconData iconData = icon;
+    return new CustomPaint(
+      size: iconData.size,
+      painter: new _AnimatedIconPainter(
+        iconData.paths,
+        progress,
+        color,
+        _pathFactory,
+      ),
+    );
   }
 }
+
+typedef ui.Path _UiPathFactory();
+
+class _AnimatedIconPainter extends CustomPainter {
+  _AnimatedIconPainter(
+    this.paths,
+    this.progress,
+    this.color,
+    this.uiPathFactory,
+  ) : super(repaint: progress);
+
+  // This list is assumed to be immutable, changes to the contents of the list
+  // will not trigger a redraw as shouldRepaint will keep returning false.
+  final List<_PathFrames> paths;
+  final Animation<double> progress;
+  final Color color;
+  final _UiPathFactory uiPathFactory;
+
+  @override
+  void paint(ui.Canvas canvas, Size size) {
+    for (_PathFrames path in paths)
+      path.paint(canvas, color, uiPathFactory, progress.value.clamp(0.0, 1.0));
+  }
+
+  @override
+  bool shouldRepaint(_AnimatedIconPainter oldDelegate) {
+    return oldDelegate.progress.value != progress.value
+      || oldDelegate.color != color
+      // We are comparing the paths list by reference, assuming the list is
+      // treated as immutable to be more efficient.
+      || oldDelegate.paths != paths
+      || oldDelegate.uiPathFactory != uiPathFactory;
+  }
+
+  @override
+  bool hitTest(Offset position) => null;
+
+  @override
+  bool shouldRebuildSemantics(CustomPainter oldDelegate) => false;
+
+  @override
+  SemanticsBuilderCallback get semanticsBuilder => null;
+}
+
+class _PathFrames {
+  const _PathFrames({
+    @required this.commands,
+    @required this.opacities
+  });
+
+  final List<_PathCommand> commands;
+  final List<double> opacities;
+
+  void paint(ui.Canvas canvas, Color color, _UiPathFactory uiPathFactory, double progress) {
+    final double opacity = _interpolate(opacities, progress, lerpDouble);
+    final ui.Paint paint = new ui.Paint()
+      ..style = PaintingStyle.fill
+      ..color = color.withOpacity(opacity);
+    final ui.Path path = uiPathFactory();
+    for (_PathCommand command in commands)
+      command.apply(path, progress);
+    canvas.drawPath(path, paint);
+  }
+}
+
+abstract class _PathCommand {
+  const _PathCommand();
+
+  void apply(ui.Path path, double progress);
+}
+
+class _PathMoveTo extends _PathCommand {
+  const _PathMoveTo(this.points);
+
+  final List<Offset> points;
+
+  @override
+  void apply(Path path, double progress) {
+    final Offset offset = _interpolate(points, progress, Offset.lerp);
+    path.moveTo(offset.dx, offset.dy);
+  }
+}
+
+class _PathCubicTo extends _PathCommand {
+  const _PathCubicTo(this.controlPoints1, this.controlPoints2, this.targetPoints);
+
+  final List<Offset> controlPoints2;
+  final List<Offset> controlPoints1;
+  final List<Offset> targetPoints;
+
+  @override
+  void apply(Path path, double progress) {
+    final Offset controlPoint1 = _interpolate(controlPoints1, progress, Offset.lerp);
+    final Offset controlPoint2 = _interpolate(controlPoints2, progress, Offset.lerp);
+    final Offset targetPoint = _interpolate(targetPoints, progress, Offset.lerp);
+    path.cubicTo(
+      controlPoint1.dx, controlPoint1.dy,
+      controlPoint2.dx, controlPoint2.dy,
+      targetPoint.dx, targetPoint.dy
+    );
+  }
+}
+
+class _PathLineTo extends _PathCommand {
+  const _PathLineTo(this.points);
+
+  final List<Offset> points;
+
+  @override
+  void apply(Path path, double progress) {
+    final Offset point = _interpolate(points, progress, Offset.lerp);
+    path.lineTo(point.dx, point.dy);
+  }
+}
+
+class _PathClose extends _PathCommand {
+  const _PathClose();
+
+  @override
+  void apply(Path path, double progress) {
+    path.close();
+  }
+}
+
+// Interpolates a value given a set of values equally spaced in time.
+//
+// [interpolator] is the interpolation function used to  interpolate between 2
+// points of type T.
+//
+// This is currently done with linear interpolation between every 2 consecutive 
+// points. Linear interpolation was smooth enough with the limited set of
+// animations we have tested, so we use it for simplicity. If we find this to
+// not be smooth enough we can try applying spline instead.
+//
+// [progress] is clamped to be between 0 and 1.
+T _interpolate<T>(List<T> values, double progress, _Interpolator<T> interpolator) {
+  final double clampedProgress = progress.clamp(0.0, 1.0);
+  if (values.length == 1)
+    return values[0];
+  final double targetIdx = lerpDouble(0, values.length -1, clampedProgress);
+  final int lowIdx = targetIdx.floor();
+  final int highIdx = targetIdx.ceil();
+  final double t = targetIdx - lowIdx;
+  return interpolator(values[lowIdx], values[highIdx], t);
+}
+
+typedef T _Interpolator<T>(T a, T b, double progress);

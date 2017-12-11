@@ -7,6 +7,9 @@
 /// To use, import `package:flutter/material_animated_icons.dart`.
 library material_animated_icons;
 
+import 'dart:ui' show lerpDouble;
+import 'dart:ui' as ui show Paint, Path, Canvas;
+
 import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
 
