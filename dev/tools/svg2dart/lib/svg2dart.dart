@@ -11,6 +11,9 @@ import 'package:vector_math/vector_math_64.dart';
 import 'package:xml/xml.dart' as xml show parse;
 import 'package:xml/xml.dart' hide parse;
 
+// String to use for a single indentation.
+const String kIndent = '  ';
+
 /// Represents an entire animation.
 class Animation {
   const Animation(this.size, this.paths);
@@ -50,6 +53,17 @@ class Animation {
         );
     }
   }
+
+  String toDart(String className, String varName) {
+    String result = 'const $className $varName = const $className(\n';
+    result += '${kIndent}const Size(${size.x}, ${size.y}),\n';
+    result += '${kIndent}const <_PathFrames> [\n';
+    for (PathAnimation path in paths)
+      result += path.toDart();
+    result += '$kIndent],\n';
+    result += ');';
+    return result;
+  }
 }
 
 /// Represents the animation of a single path.
@@ -61,7 +75,6 @@ class PathAnimation {
       return const PathAnimation(const <PathCommandAnimation> [], opacities: const <double> []);
 
     final List<PathCommandAnimation> commands = <PathCommandAnimation>[];
-    final List<double> opacities = <double>[];
     for (int commandIdx = 0; commandIdx < frames[0].paths[pathIdx].commands.length; commandIdx++) {
       final int numPointsInCommand = frames[0].paths[pathIdx].commands[commandIdx].points.length;
       final List<List<Point<double>>> points = new List<List<Point<double>>>(numPointsInCommand);
@@ -79,10 +92,13 @@ class PathAnimation {
           );
         for (int j = 0; j < numPointsInCommand; j++)
           points[j].add(frame.paths[pathIdx].commands[commandIdx].points[j]);
-        opacities.add(frame.paths[pathIdx].opacity);
       }
       commands.add(new PathCommandAnimation(commandType, points));
     }
+
+    final List<double> opacities =
+      frames.map<double>((FrameData d) => d.paths[pathIdx].opacity).toList();
+
     return new PathAnimation(commands, opacities: opacities);
   }
 
@@ -94,6 +110,20 @@ class PathAnimation {
   @override
   String toString() {
     return 'PathAnimation(commands: $commands, opacities: $opacities)';
+  }
+
+  String toDart() {
+    String result = '${kIndent*2}const _PathFrames(\n';
+    result += '${kIndent*3}opacities: const <double> [\n';
+    for (double opacity in opacities)
+      result +='${kIndent*4}$opacity,\n';
+    result += '${kIndent*3}],\n';
+    result += '${kIndent*3}commands: const <_PathCommand> [\n';
+    for (PathCommandAnimation command in commands)
+      result += command.toDart();
+    result += '${kIndent*3}],\n';
+    result += '${kIndent*2}),\n';
+    return result;
   }
 }
 
@@ -112,6 +142,35 @@ class PathCommandAnimation {
   @override
   String toString() {
     return 'PathCommandAnimation(type: $type, points: $points)';
+  }
+
+  String toDart() {
+    String dartCommandClass;
+    switch (type) {
+      case 'M':
+        dartCommandClass = '_PathMoveTo';
+        break;
+      case 'C':
+        dartCommandClass = '_PathCubicTo';
+        break;
+      case 'L':
+        dartCommandClass = '_PathLineTo';
+        break;
+      case 'Z':
+        dartCommandClass = '_PathClose';
+        break;
+      default:
+        throw new Exception('unsupported path command: $type');
+    }
+    String result = '${kIndent*4}const $dartCommandClass(\n';
+    for (List<Point<double>> pointFrames in points) {
+      result += '${kIndent*5}const <Offset> [\n';
+      for (Point<double> point in pointFrames)
+        result += '${kIndent*6}const Offset(${point.x}, ${point.y}),\n';
+      result += '${kIndent*5}],\n';
+    }
+    result +='${kIndent*4}),\n';
+    return result;
   }
 }
 
