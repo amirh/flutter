@@ -24,6 +24,19 @@ const double _kFloatingActionButtonMargin = 16.0; // TODO(hmuller): should be de
 const Duration _kFloatingActionButtonSegue = const Duration(milliseconds: 200);
 final Tween<double> _kFloatingActionButtonTurnTween = new Tween<double>(begin: -0.125, end: 0.0);
 
+/// Returns a path for a notch in the outline of a shape.
+///
+/// The path makes a notch in the host shape that can contain the guest shape.
+///
+/// The [host] is the bounding rectangle for the host shape, and [guest] is the
+/// bounding rectangle for the guest shape.
+///
+/// The [start] and [end] arguments are points on the outline of the host shape
+/// that will be connected by the returned path.
+///
+/// The returned path might pass inside the content bounds area.
+typedef Path NotchMaker(Rect host, Rect guest, Offset start, Offset end);
+
 enum _ScaffoldSlot {
   body,
   appBar,
@@ -46,6 +59,7 @@ class ScaffoldGeometry {
   const ScaffoldGeometry({
     this.bottomNavigationBarTop,
     this.floatingActionButtonArea,
+    this.floatingActionButtonNotchMaker,
   });
 
   /// The distance from the scaffold's top edge to the top edge of the
@@ -61,21 +75,37 @@ class ScaffoldGeometry {
   /// This is null when there is no floating action button showing.
   final Rect floatingActionButtonArea;
 
+  /// A [NotchMaker] for the floating action button.
+  final NotchMaker floatingActionButtonNotchMaker;
+
   ScaffoldGeometry _scaleFab(double scaleFactor) {
     if (scaleFactor == 1.0)
       return this;
 
-    if (scaleFactor == 0.0)
-      return new ScaffoldGeometry(bottomNavigationBarTop: bottomNavigationBarTop);
+    if (scaleFactor == 0.0) {
+      return new ScaffoldGeometry(
+        bottomNavigationBarTop: bottomNavigationBarTop,
+        floatingActionButtonNotchMaker: floatingActionButtonNotchMaker,
+      );
+    }
 
     final Rect scaledFab = Rect.lerp(
       floatingActionButtonArea.center & Size.zero,
       floatingActionButtonArea,
       scaleFactor
     );
+    return copyWith(floatingActionButtonArea: scaledFab);
+  }
+
+  ScaffoldGeometry copyWith({
+    double bottomNavigationBarTop,
+    Rect floatingActionButtonArea,
+    NotchMaker floatingActionButtonNotchMaker,
+  }) {
     return new ScaffoldGeometry(
-      bottomNavigationBarTop: bottomNavigationBarTop,
-      floatingActionButtonArea: scaledFab,
+      bottomNavigationBarTop: bottomNavigationBarTop ?? this.bottomNavigationBarTop,
+      floatingActionButtonArea: floatingActionButtonArea ?? this.floatingActionButtonArea,
+      floatingActionButtonNotchMaker: floatingActionButtonNotchMaker ?? this.floatingActionButtonNotchMaker,
     );
   }
 }
@@ -107,11 +137,13 @@ class _ScaffoldGeometryNotifier extends ChangeNotifier implements ValueListenabl
     double bottomNavigationBarTop,
     Rect floatingActionButtonArea,
     double floatingActionButtonScale,
+    NotchMaker floatingActionButtonNotchMaker,
   }) {
     fabScale = floatingActionButtonScale ?? fabScale;
-    geometry = new ScaffoldGeometry(
-      bottomNavigationBarTop: bottomNavigationBarTop ?? geometry?.bottomNavigationBarTop,
-      floatingActionButtonArea: floatingActionButtonArea ?? geometry?.floatingActionButtonArea,
+    geometry = geometry.copyWith(
+      bottomNavigationBarTop: bottomNavigationBarTop,
+      floatingActionButtonArea: floatingActionButtonArea,
+      floatingActionButtonNotchMaker: floatingActionButtonNotchMaker,
     );
     notifyListeners();
   }
@@ -675,6 +707,13 @@ class Scaffold extends StatefulWidget {
     return scaffoldScope.geometryNotifier;
   }
 
+  /// Sets the [ScaffoldGeometry.floatingActionButtonNotchMaker] for the closest
+  /// [Scaffold] ancestor of the given context.
+  static void setFloatingActionButtonNotchMakerFor(BuildContext context, NotchMaker notchMaker) {
+    final _ScaffoldGeometryNotifier geometry = geometryOf(context);
+    geometry._updateWith(floatingActionButtonNotchMaker: notchMaker);
+  }
+
   /// Whether the Scaffold that most tightly encloses the given context has a
   /// drawer.
   ///
@@ -964,7 +1003,7 @@ class ScaffoldState extends State<Scaffold> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _geometryNotifier = new _ScaffoldGeometryNotifier(null, context);
+    _geometryNotifier = new _ScaffoldGeometryNotifier(const ScaffoldGeometry(), context);
   }
 
   @override
