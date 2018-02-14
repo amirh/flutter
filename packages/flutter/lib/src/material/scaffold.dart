@@ -28,10 +28,12 @@ final Tween<double> _kFloatingActionButtonTurnTween = new Tween<double>(begin: -
 ///
 /// The path makes a notch in the host shape that can contain the guest shape.
 ///
-/// The [host] is the bounding rectangle for the host shape, and [guest] is the
-/// bounding rectangle for the guest shape.
 ///
-/// The [start] and [end] arguments are points on the outline of the host shape
+/// The `host` is the bounding rectangle for the shape into which the notch will
+/// be applied.
+///
+///
+/// The `start` and `end` arguments are points on the outline of the host shape
 /// that will be connected by the returned path.
 ///
 /// The returned path might pass inside the content bounds area.
