@@ -82,6 +82,13 @@ List<GalleryItem> _buildGalleryItems() {
     ),
     // Material Components
     new GalleryItem(
+      title: 'Bottom app bar',
+      subtitle: 'With different floating action button configurations',
+      category: 'Material Components',
+      routeName: BottomAppBarDemo.routeName,
+      buildRoute: (BuildContext context) => new BottomAppBarDemo(),
+    ),
+    new GalleryItem(
       title: 'Bottom navigation',
       subtitle: 'Bottom navigation with cross-fading views',
       category: 'Material Components',

@@ -304,6 +304,7 @@ class _ScaffoldLayout extends MultiChildLayoutDelegate {
         fabY = math.min(fabY, contentBottom - snackBarSize.height - fabSize.height - _kFloatingActionButtonMargin);
       if (bottomSheetSize.height > 0.0)
         fabY = math.min(fabY, contentBottom - bottomSheetSize.height - fabSize.height / 2.0);
+      fabY += 30.0;
       positionChild(_ScaffoldSlot.floatingActionButton, new Offset(fabX, fabY));
       floatingActionButtonRect = new Offset(fabX, fabY) & fabSize;
     }
