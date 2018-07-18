@@ -33,9 +33,9 @@ class _CombiningGestureArenaMember extends GestureArenaMember {
     assert(_pointer == pointer);
     assert(_winner != null || _members.isNotEmpty);
     _close();
-    _winner ??= _members[0];
+    _winner ??= _owner.captain ?? _members[0];
     for (GestureArenaMember member in _members) {
-      if (member != _winner)
+      if (member != _winner )
         member.rejectGesture(pointer);
     }
     _winner.acceptGesture(pointer);
@@ -74,7 +74,8 @@ class _CombiningGestureArenaMember extends GestureArenaMember {
         _entry.resolve(disposition);
     } else {
       assert(disposition == GestureDisposition.accepted);
-      _winner ??= member;
+      print('team won');
+      _winner ??= _owner.captain ?? member;
       _entry.resolve(disposition);
     }
   }
@@ -109,6 +110,8 @@ class _CombiningGestureArenaMember extends GestureArenaMember {
 /// [OneSequenceGestureRecognizer.team] to an instance of [GestureArenaTeam].
 class GestureArenaTeam {
   final Map<int, _CombiningGestureArenaMember> _combiners = <int, _CombiningGestureArenaMember>{};
+
+  GestureArenaMember captain;
 
   /// Adds a new member to the arena on behalf of this team.
   ///

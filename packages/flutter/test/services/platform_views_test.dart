@@ -111,5 +111,64 @@ void main() {
       expect(createdViews, orderedEquals(<int>[0, 5]));
 
     });
+
+    test('send touches to Android views', () async {
+      viewsController.registerViewType('webview');
+      final AndroidViewController view1 = PlatformViewsService.initAndroidView(
+          id: 0, viewType: 'webview');
+      final AndroidViewController view2 = PlatformViewsService.initAndroidView(
+          id: 1, viewType: 'webview');
+
+      await view1.setSize(const Size(100.0, 100.0));
+      await view2.setSize(const Size(200.0, 300.0));
+
+      view1.sendPointerEvent(
+          downTime: 1,
+          eventTime: 2,
+          action: 3,
+          x: 4.0,
+          y: 5.0,
+          pressure: 6.0,
+          size: 7.0,
+          metaState: 8,
+          xPrecision: 9.0,
+          yPrecision: 10.0,
+          deviceId: 11,
+          edgeFlags: 12
+      );
+      view2.sendPointerEvent(
+          downTime: 3,
+          eventTime: 4,
+          action: 5,
+          x: 6.0,
+          y: 7.0,
+          pressure: 8.0,
+          size: 9.0,
+          metaState: 10,
+          xPrecision: 11.0,
+          yPrecision: 12.0,
+          deviceId: 13,
+          edgeFlags: 14
+      );
+      expect(
+          viewsController.getMotionEventsForView(0),
+          orderedEquals(<FakeMotionEvent>[
+            const FakeMotionEvent(1, 2, 3, 4.0, 5.0, 6.0, 7.0, 8, 9.0, 10.0, 11, 12)
+          ])
+      );
+      expect(
+          viewsController.getMotionEventsForView(1),
+          orderedEquals(<FakeMotionEvent>[
+            const FakeMotionEvent(3, 4, 5, 6.0, 7.0, 8.0, 9.0, 10, 11.0, 12.0, 13, 14)
+          ])
+      );
+    });
+
+    test('pointerAction',() {
+     expect(
+         AndroidViewController.pointerAction(1, AndroidViewController.kActionPointerDown),
+         1
+     );
+    });
   });
 }
