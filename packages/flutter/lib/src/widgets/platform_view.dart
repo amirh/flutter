@@ -11,6 +11,27 @@ import 'basic.dart';
 import 'debug.dart';
 import 'framework.dart';
 
+class IosUiView extends LeafRenderObjectWidget {
+  const IosUiView({
+    Key key,
+    @required this.viewId
+  }) : assert(viewId != null),
+        super(key: key);
+
+  final int viewId;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return new RenderIosView(
+        viewId: viewId
+    );
+  }
+
+  @override
+  void updateRenderObject(BuildContext context, RenderIosView renderObject) {
+    renderObject.viewId = viewId;
+  }
+}
 /// Embeds an Android view in the Widget hierarchy.
 ///
 /// Embedding Android views is an expensive operation and should be avoided when a Flutter

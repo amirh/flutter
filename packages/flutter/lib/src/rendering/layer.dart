@@ -250,6 +250,32 @@ class TextureLayer extends Layer {
   S find<S>(Offset regionOffset) => null;
 }
 
+class IosUiViewLayer extends Layer {
+  IosUiViewLayer({
+    @required this.rect,
+    @required this.viewId,
+  }): assert(rect != null), assert(viewId != null);
+
+  /// Bounding rectangle of this layer.
+  final Rect rect;
+
+  final int viewId;
+
+  @override
+  void addToScene(ui.SceneBuilder builder, Offset layerOffset) {
+    final Rect shiftedRect = rect.shift(layerOffset);
+    builder.addEmbeddedView(
+      viewId,
+      offset: shiftedRect.topLeft,
+      width: shiftedRect.width,
+      height: shiftedRect.height,
+    );
+  }
+
+  @override
+  S find<S>(Offset regionOffset) => null;
+}
+
 /// A layer that indicates to the compositor that it should display
 /// certain performance statistics within it.
 ///

@@ -30,6 +30,45 @@ enum PlatformViewHitTestBehavior {
   transparent,
 }
 
+class RenderIosView extends RenderBox {
+  RenderIosView({ @required int viewId })
+      : assert(viewId != null),
+        _viewId = viewId;
+
+  int get viewId => _viewId;
+  int _viewId;
+  set viewId(int value) {
+    assert(value != null);
+    if (viewId == value) {
+      return;
+    }
+    _viewId = value;
+    markNeedsPaint();
+  }
+
+  @override
+  bool get sizedByParent => true;
+
+  @override
+  bool get alwaysNeedsCompositing => true;
+
+  @override
+  bool get isRepaintBoundary => true;
+
+  @override
+  void performResize() {
+    size = constraints.biggest;
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    context.addLayer(new IosUiViewLayer(
+      rect: new Rect.fromLTWH(offset.dx, offset.dy, size.width, size.height),
+      viewId: _viewId,
+    ));
+  }
+}
+
 enum _PlatformViewState {
   uninitialized,
   resizing,
