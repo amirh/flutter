@@ -479,9 +479,7 @@ class MultiFrameImageStreamCompleter extends ImageStreamCompleter {
       return;
     }
     final Duration delay = _frameDuration - (timestamp - _shownTimestamp);
-    _timer = Timer(delay * timeDilation, () {
-      SchedulerBinding.instance.scheduleFrameCallback(_handleAppFrame);
-    });
+    SchedulerBinding.instance.scheduleFrameCallback(_handleAppFrame);
   }
 
   bool _isFirstFrame() {
@@ -490,7 +488,7 @@ class MultiFrameImageStreamCompleter extends ImageStreamCompleter {
 
   bool _hasFrameDurationPassed(Duration timestamp) {
     assert(_shownTimestamp != null);
-    return timestamp - _shownTimestamp >= _frameDuration;
+    return _frameDuration - timestamp + _shownTimestamp <= const Duration(milliseconds: 8);
   }
 
   Future<void> _decodeNextFrameAndSchedule() async {
