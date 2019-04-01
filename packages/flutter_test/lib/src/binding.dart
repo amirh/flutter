@@ -209,6 +209,16 @@ abstract class TestWidgetsFlutterBinding extends BindingBase
   /// this method works when the test is run with `flutter run`.
   Future<void> pump([ Duration duration, EnginePhase newPhase = EnginePhase.sendSemanticsUpdate ]);
 
+  /// Runs all timers until no timers remain (subject to [flushPeriodicTimers]
+  /// option), including those scheduled as a result of running them.
+  ///
+  /// [timeout] lets you set the maximum amount of time the flushing will take.
+  /// Throws a [StateError] if the [timeout] is exceeded. The default timeout
+  /// is 1 hour. [timeout] is relative to the elapsed time.
+  void flushTimers(
+      {Duration timeout: const Duration(hours: 1),
+        bool flushPeriodicTimers: true});
+
   /// Runs a `callback` that performs real asynchronous work.
   ///
   /// This is intended for callers who need to call asynchronous methods where
@@ -740,6 +750,19 @@ class AutomatedTestWidgetsFlutterBinding extends TestWidgetsFlutterBinding {
     });
   }
 
+  /// Runs all timers until no timers remain (subject to [flushPeriodicTimers]
+  /// option), including those scheduled as a result of running them.
+  ///
+  /// [timeout] lets you set the maximum amount of time the flushing will take.
+  /// Throws a [StateError] if the [timeout] is exceeded. The default timeout
+  /// is 1 hour. [timeout] is relative to the elapsed time.
+  @override
+  void flushTimers(
+      {Duration timeout: const Duration(hours: 1),
+        bool flushPeriodicTimers: true}) {
+    _currentFakeAsync.flushTimers(timeout:  timeout, flushPeriodicTimers:  flushPeriodicTimers);
+  }
+
   @override
   Future<T> runAsync<T>(
     Future<T> callback(), {
@@ -1248,6 +1271,13 @@ class LiveTestWidgetsFlutterBinding extends TestWidgetsFlutterBinding {
       _pendingFrame = Completer<void>();
       return _pendingFrame.future;
     });
+  }
+
+  @override
+  void flushTimers(
+      {Duration timeout: const Duration(hours: 1),
+        bool flushPeriodicTimers: true}) {
+    throw 'not supported';
   }
 
   @override

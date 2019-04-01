@@ -305,6 +305,19 @@ class WidgetTester extends WidgetController implements HitTestDispatcher, Ticker
     return TestAsyncUtils.guard<void>(() => binding.pump(duration, phase));
   }
 
+  /// Runs all timers until no timers remain (subject to [flushPeriodicTimers]
+  /// option), including those scheduled as a result of running them.
+  ///
+  /// [timeout] lets you set the maximum amount of time the flushing will take.
+  /// Throws a [StateError] if the [timeout] is exceeded. The default timeout
+  /// is 1 hour. [timeout] is relative to the elapsed time.
+  @override
+  void flushTimers(
+      {Duration timeout: const Duration(hours: 1),
+        bool flushPeriodicTimers: true}) {
+    binding.flushTimers(timeout: timeout, flushPeriodicTimers:  flushPeriodicTimers);
+  }
+
   /// Triggers a frame after `duration` amount of time, return as soon as the frame is drawn.
   ///
   /// This enables driving an artificially high CPU load by rendering frames in
